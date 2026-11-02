@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>個人數位名片</title>
+ 
+ <!-- 🎨 CSS 樣式區塊 -->
+ <style>
+   /* 重設基礎邊界與字型 */
+   * {
+     box-sizing: border-box;
+     margin: 0;
+     padding: 0;
+   }
+
+   /* 頁面背景與整體置中 */
+   body {
+     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+     background: linear-gradient(135deg, #FFF0F5 0%, #E6E6FA 100%);
+     min-height: 100vh;
+     display: flex;
+     justify-content: center;
+     align-items: center;
+     padding: 20px;
+   }
+
+   /* 名片卡片本體 */
+   .card {
+     background-color: #ffffff;
+     width: 100%;
+     max-width: 320px;
+     padding: 40px 28px;
+     border-radius: 24px;
+     text-align: center;
+     box-shadow: 0 12px 32px rgba(180, 160, 190, 0.2);
+   }
+
+   /* 圓形大頭貼 */
+   .avatar {
+     width: 110px;
+     height: 110px;
+     border-radius: 50%;
+     object-fit: cover;
+     margin-bottom: 20px;
+     border: 4px solid #FFFFFF;
+     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+   }
+
+   /* 名字樣式 */
+   .name {
+     font-size: 1.5rem;
+     font-weight: 700;
+     color: #4A4A4A;
+     margin-bottom: 8px;
+   }
+
+   /* 自我介紹文字 */
+   .bio {
+     font-size: 0.9rem;
+     color: #7A7A7A;
+     line-height: 1.5;
+     margin-bottom: 28px;
+   }
+
+   /* 按鈕容器布局 */
+   .button-group {
+     display: flex;
+     flex-direction: column;
+     gap: 14px;
+   }
+
+   /* 按鈕基礎樣式 */
+   .btn {
+     display: block;
+     width: 100%;
+     padding: 12px 20px;
+     border-radius: 50px;
+     text-decoration: none;
+     font-size: 0.95rem;
+     font-weight: 600;
+     border: none;
+     cursor: pointer;
+     transition: all 0.3s ease;
+   }
+
+   /* Instagram 按鈕（馬卡龍粉紫） */
+   .btn-ig {
+     background-color: #F8D7DA;
+     color: #6C4A56;
+     box-shadow: 0 4px 12px rgba(248, 215, 218, 0.6);
+   }
+
+   /* Email 按鈕（馬卡龍薄荷綠） */
+   .btn-email {
+     background-color: #D1E7DD;
+     color: #2C5242;
+     box-shadow: 0 4px 12px rgba(209, 231, 221, 0.6);
+   }
+
+   /* 滑鼠懸停互動效果 */
+   .btn:hover {
+     transform: translateY(-2px);
+     opacity: 0.9;
+   }
+
+   /* JS 觸發的提示浮磚 (Toast Notification) */
+   .toast {
+     position: fixed;
+     bottom: 30px;
+     left: 50%;
+     transform: translateX(-50%) translateY(100px);
+     background: #6C4A56;
+     color: #ffffff;
+     padding: 10px 24px;
+     border-radius: 50px;
+     font-size: 0.85rem;
+     font-weight: 500;
+     opacity: 0;
+     transition: all 0.4s ease;
+     pointer-events: none;
+     box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+   }
+
+   .toast.show {
+     opacity: 1;
+     transform: translateX(-50%) translateY(0);
+   }
+ </style>
+</head>
+<body>
+
+ <!-- 📄 HTML 內容結構區塊 -->
+ <div class="card">
+   <img class="avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop" alt="個人大頭貼">
+   
+   <h1 class="name">蔡芷岑</h1>
+   <p class="bio"> 哈哈</p>
+   
+   <div class="button-group">
+     <a href="https://instagram.com" target="_blank" class="btn btn-ig">Instagram</a>
+     <button class="btn btn-email" id="emailBtn">複製 Email 信箱</button>
+   </div>
+ </div>
+
+ <!-- 提示浮磚容器 -->
+ <div id="toast" class="toast">已複製 Email 地址！</div>
+
+ <!-- ⚡ JavaScript 互動腳本區塊 -->
+ <script>
+   // 1. 設定你的 Email 信箱
+   const myEmail = "your-email@example.com";
+
+   // 2. 取得按鈕與提示浮磚元素
+   const emailBtn = document.getElementById("emailBtn");
+   const toast = document.getElementById("toast");
+
+   // 3. 監聽按鈕點擊事件
+   emailBtn.addEventListener("click", () => {
+     // 複製文字到剪貼簿
+     navigator.clipboard.writeText(myEmail).then(() => {
+       // 顯示提示浮磚
+       toast.classList.add("show");
+       
+       // 2 秒後自動隱藏
+       setTimeout(() => {
+         toast.classList.remove("show");
+       }, 2000);
+     }).catch(err => {
+       alert("複製失敗，信箱為：" + myEmail);
+     });
+   });
+ </script>
+
+</body>
+</html>
