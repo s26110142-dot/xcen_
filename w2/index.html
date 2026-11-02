@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>今天吃什麼？ - 隨機美食抽籤機</title>
+  
+  <!-- Google Fonts 可愛圓潤字體 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
+  
+  <!-- CSS 樣式區域 -->
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Zen Maru Gothic', 'Fredoka', cursive, sans-serif;
+      background-color: #fff9e6;
+      background-image: 
+        radial-gradient(#ffd54f 15%, transparent 16%),
+        radial-gradient(#ffd54f 15%, transparent 16%);
+      background-size: 60px 60px;
+      background-position: 0 0, 30px 30px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      color: #5c3d11;
+    }
+
+    .container {
+      background: #ffffff;
+      border: 6px solid #ffb74d;
+      border-radius: 35px;
+      padding: 40px 30px;
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+      box-shadow: 0 20px 0 #ffe082, 0 25px 25px rgba(0,0,0,0.08);
+      position: relative;
+    }
+
+    .title-container {
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 25px;
+    }
+
+    #main-title {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #e65100;
+      text-shadow: 3px 3px 0px #ffe082;
+      line-height: 1.3;
+      transition: transform 0.2s;
+    }
+
+    /* 彈跳動畫特效 */
+    .bounce {
+      animation: popBounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popBounce {
+      0% { transform: scale(0.3); opacity: 0; }
+      50% { transform: scale(1.15); }
+      70% { transform: scale(0.95); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .draw-btn {
+      background: #ffb300;
+      color: #ffffff;
+      font-size: 1.5rem;
+      font-weight: 700;
+      padding: 16px 45px;
+      border: 4px solid #fff;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 8px 0 #ff6f00, 0 12px 20px rgba(255, 111, 0, 0.3);
+      transition: all 0.15s ease;
+      outline: none;
+      letter-spacing: 2px;
+    }
+
+    .draw-btn:hover {
+      background: #ffa000;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 0 #ff6f00, 0 15px 22px rgba(255, 111, 0, 0.4);
+    }
+
+    .draw-btn:active {
+      transform: translateY(6px);
+      box-shadow: 0 2px 0 #ff6f00, 0 5px 10px rgba(255, 111, 0, 0.2);
+    }
+
+    /* 結果展現卡片 */
+    .result-card {
+      margin-top: 30px;
+      background: #fffde7;
+      border: 3px dashed #ffd54f;
+      border-radius: 25px;
+      padding: 20px;
+      display: none;
+    }
+
+    .result-card.active {
+      display: block;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .photo-frame {
+      width: 100%;
+      height: 220px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 4px solid #fff;
+      box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      background-color: #eee;
+    }
+
+    .photo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .go-btn {
+      display: inline-block;
+      text-decoration: none;
+      background: #4caf50;
+      color: white;
+      font-weight: 700;
+      font-size: 1.2rem;
+      padding: 12px 30px;
+      border-radius: 30px;
+      box-shadow: 0 5px 0 #2e7d32;
+      transition: all 0.15s ease;
+    }
+
+    .go-btn:hover {
+      background: #43a047;
+      transform: translateY(-2px);
+      box-shadow: 0 7px 0 #2e7d32;
+    }
+
+    .go-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #2e7d32;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="title-container">
+      <h1 id="main-title">今天吃什麼？</h1>
+    </div>
+
+    <button id="draw-btn" class="draw-btn">點我抽籤</button>
+
+    <div id="result-card" class="result-card">
+      <div class="photo-frame">
+        <img id="food-img" src="" alt="美食照片">
+      </div>
+      <a id="map-link" class="go-btn" href="#" target="_blank" rel="noopener">🚀 馬上出發</a>
+    </div>
+  </div>
+
+  <!-- JavaScript 邏輯區域 -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 餐廳資料庫（包含名稱、線上圖址、Google Map 搜尋連結）
+      const restaurants = [
+        {
+          name: "北平楊寶寶蒸餃總店",
+          image: "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?auto=format&fit=crop&w=800&q=80",
+          mapUrl: "https://www.google.com/maps/search/?api=1&query=北平楊寶寶蒸餃總店"
+        },
+        {
+          name: "好用心。好窩食作",
+          image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
+          mapUrl: "https://www.google.com/maps/search/?api=1&query=好用心好窩食作"
+        },
+        {
+          name: "明德羊肉",
+          image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
+          mapUrl: "https://www.google.com/maps/search/?api=1&query=明德羊肉"
+        },
+        {
+          name: "小崗山休閒茶藝館",
+          image: "https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=800&q=80",
+          mapUrl: "https://www.google.com/maps/search/?api=1&query=小崗山休閒茶藝館"
+        },
+        {
+          name: "霖園土雞城",
+          image: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=800&q=80",
+          mapUrl: "https://www.google.com/maps/search/?api=1&query=霖園土雞城"
+        }
+      ];
+
+      // 取得 DOM 元素
+      const mainTitle = document.getElementById('main-title');
+      const drawBtn = document.getElementById('draw-btn');
+      const resultCard = document.getElementById('result-card');
+      const foodImg = document.getElementById('food-img');
+      const mapLink = document.getElementById('map-link');
+
+      let isSpinning = false;
+
+      drawBtn.addEventListener('click', () => {
+        if (isSpinning) return;
+        isSpinning = true;
+
+        // 隱藏之前的卡片結果
+        resultCard.classList.remove('active');
+        mainTitle.classList.remove('bounce');
+
+        let counter = 0;
+        const totalTicks = 15; // 快速閃爍次數
+
+        // 滾動抽籤效果
+        const timer = setInterval(() => {
+          const randomIndex = Math.floor(Math.random() * restaurants.length);
+          mainTitle.textContent = restaurants[randomIndex].name;
+          counter++;
+
+          if (counter >= totalTicks) {
+            clearInterval(timer);
+
+            // 最終確定選中的餐廳
+            const finalChoice = restaurants[Math.floor(Math.random() * restaurants.length)];
+            
+            // 替換標題並加上彈跳動畫
+            mainTitle.textContent = finalChoice.name;
+            mainTitle.classList.add('bounce');
+
+            // 替換照片與 Google 地圖連結
+            foodImg.src = finalChoice.image;
+            mapLink.href = finalChoice.mapUrl;
+
+            // 顯示結果卡片
+            resultCard.classList.add('active');
+
+            isSpinning = false;
+          }
+        }, 80);
+      });
+    });
+  </script>
+</body>
+</html>
