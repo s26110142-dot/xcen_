@@ -170,14 +170,14 @@
                     網頁程式設計作品集 / Web Development Portfolio
                 </p>
 
-                <!-- Progress Meter (更新為 3 / 16 TASKS，進度條改為 w-[18.75%]) -->
+                <!-- Progress Meter (更新為 4 / 16 TASKS，進度條改為 w-[25%]) -->
                 <div class="w-full max-w-xs mx-auto bg-white/[0.04] p-1.5 rounded-xl border border-white/5">
                     <div class="flex justify-between text-[11px] font-mono text-gray-400 mb-1 px-1">
                         <span>COMPLETED</span>
-                        <span class="text-sky-400 font-semibold">3 / 16 TASKS</span>
+                        <span class="text-sky-400 font-semibold">4 / 16 TASKS</span>
                     </div>
                     <div class="w-full bg-black/40 h-1.5 rounded-full overflow-hidden">
-                        <div class="bg-gradient-to-r from-sky-400 to-emerald-400 h-full rounded-full w-[18.75%] transition-all duration-1000"></div>
+                        <div class="bg-gradient-to-r from-sky-400 to-emerald-400 h-full rounded-full w-[25%] transition-all duration-1000"></div>
                     </div>
                 </div>
             </div>
@@ -276,7 +276,7 @@
                     </div>
                 </a>
 
-                <!-- BUTTONS 4 TO 16 (LOCKED) WILL BE DYNAMICALLY INJECTED -->
+                <!-- BUTTONS 4 TO 16 WILL BE DYNAMICALLY INJECTED (WEEK 5 UNLOCKED) -->
 
             </div>
         </section>
@@ -288,15 +288,51 @@
         <p class="mt-1 text-gray-600">DESIGNED WITH MINIMALIST ELEGANCE</p>
     </footer>
 
-    <!-- JavaScript to generate Week 4 to Week 16 locked buttons -->
+    <!-- JavaScript to generate Week 4 to Week 16 buttons (Week 5 Unlocked) -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const grid = document.getElementById('quest-grid');
 
-            // Generate Week 4 to Week 16 locked buttons
             for (let i = 4; i <= 16; i++) {
                 const weekNum = i < 10 ? `0${i}` : `${i}`;
+
+                // Week 5 已解鎖
+                if (i === 5) {
+                    const unlockedCard = document.createElement('a');
+                    unlockedCard.href = 'w5/index.html';
+                    unlockedCard.className = 'matte-glass unlocked-card p-5 rounded-2xl flex flex-col justify-between group';
+
+                    unlockedCard.innerHTML = `
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="font-mono text-[11px] text-sky-400 font-semibold px-2.5 py-0.5 rounded-md bg-sky-500/10 border border-sky-500/20">
+                                    WEEK ${weekNum}
+                                </span>
+                                <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
+                                    <span class="w-1 h-1 rounded-full bg-emerald-400"></span>
+                                    UNLOCKED
+                                </span>
+                            </div>
+                            <h3 class="text-base font-semibold text-gray-100 group-hover:text-sky-300 transition-colors mb-1.5">
+                                Week 5 - 課程作品
+                            </h3>
+                            <p class="text-xs text-gray-400 line-clamp-2 leading-relaxed">
+                                第五週網頁程式設計實作作品。
+                            </p>
+                        </div>
+                        <div class="mt-5 pt-3 border-t border-white/[0.05] flex items-center justify-between text-xs font-mono text-gray-400 group-hover:text-sky-400 transition-colors">
+                            <span>[ VIEW QUEST ]</span>
+                            <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                            </svg>
+                        </div>
+                    `;
+
+                    grid.appendChild(unlockedCard);
+                    continue;
+                }
                 
+                // 其他週次維持鎖定狀態
                 const card = document.createElement('div');
                 card.className = 'locked-card p-5 rounded-2xl flex flex-col justify-between opacity-60 hover:opacity-90 transition-all cursor-not-allowed group relative';
                 card.setAttribute('tabindex', '0');
