@@ -36,6 +36,7 @@
       transition: background 0.2s ease;
     }
     .notion-btn:hover { background: #2f2d27; }
+    .notion-btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .notion-btn-secondary {
       background: #ffffff;
       color: #37352f;
@@ -85,11 +86,11 @@
     <div class="flex flex-col gap-4">
       <div>
         <label class="block text-sm text-gray-600 mb-1">房間代碼</label>
-        <input type="text" id="room-input" class="notion-input w-full" placeholder="例如: 888">
+        <input type="text" id="room-input" class="notion-input w-full" placeholder="例如: 888" onkeydown="if(event.key==='Enter') joinRoom()">
       </div>
       <div>
         <label class="block text-sm text-gray-600 mb-1">玩家暱稱</label>
-        <input type="text" id="player-input" class="notion-input w-full" placeholder="你的名字">
+        <input type="text" id="player-input" class="notion-input w-full" placeholder="你的名字" onkeydown="if(event.key==='Enter') joinRoom()">
       </div>
       <button onclick="joinRoom()" class="notion-btn w-full mt-2">進入房間</button>
     </div>
@@ -98,14 +99,33 @@
   <!-- 遊戲主畫面 (預設隱藏) -->
   <div id="game-section" class="w-full max-w-5xl hidden flex-col gap-6">
     <!-- 頂部資訊列 -->
-    <div class="flex justify-between items-end border-b border-gray-200 pb-4">
+    <div class="flex flex-wrap justify-between items-end border-b border-gray-200 pb-4 gap-3">
       <div>
         <span class="text-xs text-gray-400 uppercase tracking-wider">Room Code</span>
         <h2 id="room-display" class="text-xl font-semibold text-gray-700"></h2>
       </div>
-      <div class="text-sm text-gray-500">
-        玩家：<span id="player-display" class="font-medium text-gray-800"></span>
+      <div class="flex items-center gap-4 text-sm text-gray-500">
+        <!-- 連線狀態指示器 -->
+        <div id="connection-badge" class="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
+          <span id="connection-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="connection-text">連線中...</span>
+        </div>
+        <div>
+          玩家：<span id="player-display" class="font-medium text-gray-800"></span>
+        </div>
       </div>
+    </div>
+
+    <!-- API 錯誤 / CORS 提示橫幅 (預設隱藏) -->
+    <div id="api-error-banner" class="hidden bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg text-xs flex items-start justify-between gap-3">
+      <div class="flex items-start gap-2">
+        <svg class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        <div>
+          <p class="font-medium">無法連接至 Google Apps Script 伺服器</p>
+          <p id="api-error-detail" class="text-amber-700 mt-0.5">可能是預覽環境 iFrame 跨域 (CORS) 限制、網路不穩，或 GAS 尚未部署為「所有人」可存取。請檢查網路或於獨立分頁開啟。</p>
+        </div>
+      </div>
+      <button onclick="pollData(true)" class="shrink-0 bg-amber-100 hover:bg-amber-200 text-amber-900 px-2.5 py-1 rounded font-medium transition-colors">重試</button>
     </div>
 
     <!-- 房主專屬控制台 (預設隱藏) -->
@@ -117,9 +137,9 @@
       
       <!-- 狀態：等待出題 -->
       <div id="host-setup-controls" class="hidden">
-        <div class="flex gap-2">
-          <input type="text" id="host-question-input" class="notion-input flex-1" placeholder="輸入題目 (例如：最喜歡的顏色？)">
-          <button onclick="sendAction('set_question', {question: document.getElementById('host-question-input').value})" class="notion-btn">發布題目</button>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input type="text" id="host-question-input" class="notion-input flex-1" placeholder="輸入題目 (例如：最喜歡的顏色？)" onkeydown="if(event.key==='Enter') publishQuestion()">
+          <button onclick="publishQuestion()" class="notion-btn">發布題目</button>
         </div>
       </div>
 
@@ -136,33 +156,35 @@
 
     <!-- 題目展示區 -->
     <div id="question-display-area" class="text-center py-8">
-      <p id="question-text" class="text-3xl font-medium text-gray-800"></p>
+      <p id="question-text" class="text-2xl sm:text-3xl font-medium text-gray-800">
+        <span class="text-gray-400 italic text-xl">正在同步房間狀態...</span>
+      </p>
     </div>
 
     <!-- 玩家填答區 -->
     <div id="answer-form-container" class="hidden max-w-md mx-auto w-full">
       <div class="flex gap-2">
-        <input type="text" id="player-answer-input" class="notion-input flex-1 text-center" placeholder="輸入你的直覺答案...">
+        <input type="text" id="player-answer-input" class="notion-input flex-1 text-center" placeholder="輸入你的直覺答案..." onkeydown="if(event.key==='Enter') submitAnswer()">
         <button onclick="submitAnswer()" class="notion-btn">送出</button>
       </div>
       <p id="submit-status" class="text-xs text-center text-green-600 mt-2 h-4"></p>
     </div>
 
     <!-- 卡片展示區 -->
-    <div id="cards-area" class="flex flex-wrap justify-center gap-6 mt-8">
+    <div id="cards-area" class="flex flex-wrap justify-center gap-6 mt-6">
       <!-- 卡片由 JS 動態生成 -->
     </div>
 
   </div>
 
   <!-- 隱藏的房主開關 (右下角極淡的小圓點) -->
-  <div class="fixed bottom-3 right-3 w-3 h-3 rounded-full bg-gray-300 opacity-20 hover:opacity-100 cursor-pointer transition-opacity" onclick="toggleHost()" title="切換房主模式"></div>
+  <div class="fixed bottom-3 right-3 w-4 h-4 rounded-full bg-gray-400 opacity-25 hover:opacity-100 cursor-pointer transition-opacity z-40" onclick="toggleHost()" title="切換房主模式"></div>
 
   <!-- 提示訊息框 (取代原生 alert) -->
   <div id="toast-message" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-sm px-4 py-2 rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity duration-300 z-50"></div>
 
   <script>
-    // 已更新為新的 API 網址
+    // Google Apps Script API 網址
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyAQhuKH4eE4IbwY2Be4fgdHPDFxkVfFCa5qclWnlGEJT1_OGtF6sFdD1xRgfOrfiU/exec";
     
     let currentRoom = "";
@@ -171,6 +193,7 @@
     let pollTimer = null;
     let lastStateStr = ""; 
     let toastTimeout = null;
+    let currentStatus = "setup";
 
     // 自訂非阻塞式提示訊息
     function showToast(msg) {
@@ -183,7 +206,35 @@
       toastTimeout = setTimeout(() => {
         toast.classList.remove("opacity-100");
         toast.classList.add("opacity-0");
-      }, 2500);
+      }, 2600);
+    }
+
+    // 更新連線狀態 UI
+    function setConnectionState(state, detailMsg = "") {
+      const badge = document.getElementById("connection-badge");
+      const dot = document.getElementById("connection-dot");
+      const text = document.getElementById("connection-text");
+      const banner = document.getElementById("api-error-banner");
+      const errorDetail = document.getElementById("api-error-detail");
+
+      if (state === "connected") {
+        badge.className = "flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-green-50 text-green-700 border border-green-200";
+        dot.className = "w-2 h-2 rounded-full bg-green-500";
+        text.textContent = "已連線";
+        banner.classList.add("hidden");
+      } else if (state === "connecting") {
+        badge.className = "flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200";
+        dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+        text.textContent = "同步中...";
+      } else if (state === "error") {
+        badge.className = "flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200";
+        dot.className = "w-2 h-2 rounded-full bg-red-500";
+        text.textContent = "連線異常";
+        if (detailMsg) {
+          errorDetail.textContent = detailMsg;
+        }
+        banner.classList.remove("hidden");
+      }
     }
 
     function joinRoom() {
@@ -206,8 +257,9 @@
       document.getElementById("player-display").textContent = playerName;
 
       // 開始輪詢
-      pollData();
-      pollTimer = setInterval(pollData, 2000);
+      pollData(true);
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(() => pollData(false), 2000);
     }
 
     function toggleHost() {
@@ -220,23 +272,33 @@
         hostPanel.classList.add("hidden");
         showToast("🔒 房主模式已關閉");
       }
-      // 強制重新渲染房主控制項
-      if (lastStateStr) {
-        renderUI(JSON.parse(lastStateStr));
-      }
-      pollData(); 
+      updateHostControls(currentStatus);
     }
 
-    async function pollData() {
+    function updateHostControls(status) {
+      if (!isHost) return;
+      document.getElementById("host-setup-controls").style.display = status === "setup" ? "block" : "none";
+      document.getElementById("host-playing-controls").style.display = status === "playing" ? "flex" : "none";
+      document.getElementById("host-revealed-controls").style.display = status === "revealed" ? "flex" : "none";
+    }
+
+    async function pollData(showLoading = false) {
       if (!currentRoom) return;
+      if (showLoading) setConnectionState("connecting");
+
       try {
-        // 加入 redirect: 'follow' 處理跨域轉址
         const res = await fetch(`${GAS_API_URL}?room=${encodeURIComponent(currentRoom)}`, {
           method: 'GET',
           redirect: 'follow'
         });
+
+        if (!res.ok) {
+          throw new Error(`HTTP 錯誤 (${res.status})`);
+        }
+
         const data = await res.json();
-        
+        setConnectionState("connected");
+
         const currentStateStr = JSON.stringify(data);
         if (currentStateStr !== lastStateStr) {
           renderUI(data);
@@ -244,6 +306,10 @@
         }
       } catch (err) {
         console.error("Polling error:", err);
+        setConnectionState(
+          "error",
+          `無法讀取房間資料（${err.message || "CORS 跨域或網路受限"}）。若在預覽視窗受限，請嘗試下載 HTML 或於獨立分頁開啟。`
+        );
       }
     }
 
@@ -255,9 +321,9 @@
         ...extraData
       };
       
+      setConnectionState("connecting");
       try {
-        // 加入 headers text/plain 與 redirect 處理 POST 的跨域與預檢請求
-        await fetch(GAS_API_URL, {
+        const res = await fetch(GAS_API_URL, {
           method: "POST",
           redirect: "follow",
           headers: {
@@ -265,22 +331,51 @@
           },
           body: JSON.stringify(payload)
         });
-        pollData(); 
+
+        if (!res.ok) {
+          throw new Error(`HTTP 錯誤 (${res.status})`);
+        }
+
+        setConnectionState("connected");
+        await pollData(false); 
       } catch (err) {
         console.error("Action error:", err);
+        showToast("⚠️ 指令傳送失敗，請檢查連線");
+        setConnectionState(
+          "error",
+          `指令「${action}」傳送失敗（${err.message || "CORS 跨域或網路受限"}）。`
+        );
       }
+    }
+
+    function publishQuestion() {
+      const qInput = document.getElementById("host-question-input");
+      const question = qInput.value.trim();
+      if (!question) {
+        showToast("請先輸入題目內容！");
+        return;
+      }
+      sendAction("set_question", { question });
+      showToast("題目已發布！");
     }
 
     function submitAnswer() {
       const ans = document.getElementById("player-answer-input").value.trim();
-      if (!ans) return;
+      if (!ans) {
+        showToast("請先輸入答案！");
+        return;
+      }
       
       sendAction("submit_answer", { answer: ans });
       document.getElementById("submit-status").textContent = "已成功送出答案！可隨時修改。";
     }
 
     function renderUI(data) {
-      const { status, question, answers } = data;
+      const status = data.status || "setup";
+      const question = data.question || "";
+      const answers = data.answers || {};
+      currentStatus = status;
+
       const qText = document.getElementById("question-text");
       const answerForm = document.getElementById("answer-form-container");
       const cardsArea = document.getElementById("cards-area");
@@ -300,51 +395,54 @@
         }
       }
 
-      // 2. 處理 3D 卡片渲染
+      // 2. 處理 3D 卡片渲染 (.flipped 放在 .flip-card 父層)
       cardsArea.innerHTML = "";
-      if (answers) {
-        Object.keys(answers).forEach(name => {
-          const ans = answers[name];
-          const isFlipped = status === "revealed" ? "flipped" : "";
-          
-          const cardHTML = `
-            <div class="flip-card w-40 h-56 ${isFlipped}">
-              <div class="flip-card-inner relative w-full h-full shadow-sm rounded-xl border border-gray-200">
-                
-                <!-- 卡片背面 (未開牌時顯示) -->
-                <div class="flip-card-front bg-gradient-to-br from-gray-50 to-gray-200 rounded-xl flex flex-col items-center justify-center p-4">
-                  <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm mb-3 text-gray-400 font-bold text-xl">
-                    ${name.charAt(0).toUpperCase()}
-                  </div>
-                  <p class="font-medium text-gray-700 truncate w-full text-center">${name}</p>
-                  <span class="text-[10px] mt-2 bg-green-100 text-green-700 px-2 py-0.5 rounded-full border border-green-200">Ready</span>
-                </div>
-                
-                <!-- 卡片正面 (開牌時顯示答案) -->
-                <div class="flip-card-back bg-white rounded-xl shadow-md border border-gray-300 flex flex-col items-center justify-center p-4">
-                  <p class="font-bold text-gray-800 text-2xl text-center break-words w-full">${ans}</p>
-                  <div class="absolute bottom-4 left-0 w-full text-center border-t border-gray-100 pt-2">
-                    <p class="text-xs text-gray-400">${name}</p>
-                  </div>
-                </div>
-
+      Object.keys(answers).forEach(name => {
+        const ans = answers[name];
+        const isFlipped = status === "revealed" ? "flipped" : "";
+        
+        const card = document.createElement("div");
+        card.className = `flip-card w-40 h-56 ${isFlipped}`;
+        card.innerHTML = `
+          <div class="flip-card-inner relative w-full h-full shadow-sm rounded-xl border border-gray-200">
+            
+            <!-- 卡片背面 (未開牌時顯示) -->
+            <div class="flip-card-front bg-gradient-to-br from-gray-50 to-gray-200 rounded-xl flex flex-col items-center justify-center p-4">
+              <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm mb-3 text-gray-400 font-bold text-xl">
+                ${escapeHTML(name.charAt(0).toUpperCase())}
+              </div>
+              <p class="font-medium text-gray-700 truncate w-full text-center">${escapeHTML(name)}</p>
+              <span class="text-[10px] mt-2 bg-green-100 text-green-700 px-2 py-0.5 rounded-full border border-green-200">Ready</span>
+            </div>
+            
+            <!-- 卡片正面 (開牌時顯示答案) -->
+            <div class="flip-card-back bg-white rounded-xl shadow-md border border-gray-300 flex flex-col items-center justify-center p-4">
+              <p class="font-bold text-gray-800 text-2xl text-center break-words w-full">${escapeHTML(String(ans))}</p>
+              <div class="absolute bottom-4 left-0 w-full text-center border-t border-gray-100 pt-2">
+                <p class="text-xs text-gray-400 truncate px-2">${escapeHTML(name)}</p>
               </div>
             </div>
-          `;
-          cardsArea.insertAdjacentHTML('beforeend', cardHTML);
-        });
-      }
+
+          </div>
+        `;
+        cardsArea.appendChild(card);
+      });
 
       // 3. 處理房主面板顯示邏輯
-      if (isHost) {
-        document.getElementById("host-setup-controls").style.display = status === "setup" ? "block" : "none";
-        document.getElementById("host-playing-controls").style.display = status === "playing" ? "flex" : "none";
-        document.getElementById("host-revealed-controls").style.display = status === "revealed" ? "flex" : "none";
-        
-        if (status === "setup") {
-          document.getElementById("host-question-input").value = "";
-        }
+      updateHostControls(status);
+      if (isHost && status === "setup") {
+        document.getElementById("host-question-input").value = "";
       }
+    }
+
+    // 防止 XSS 注入
+    function escapeHTML(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
   </script>
 </body>
