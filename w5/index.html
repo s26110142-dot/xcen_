@@ -158,6 +158,9 @@
   <!-- 隱藏的房主開關 (右下角極淡的小圓點) -->
   <div class="fixed bottom-3 right-3 w-3 h-3 rounded-full bg-gray-300 opacity-20 hover:opacity-100 cursor-pointer transition-opacity" onclick="toggleHost()" title="切換房主模式"></div>
 
+  <!-- 提示訊息框 (取代原生 alert) -->
+  <div id="toast-message" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-sm px-4 py-2 rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity duration-300 z-50"></div>
+
   <script>
     // 已更新為新的 API 網址
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyAQhuKH4eE4IbwY2Be4fgdHPDFxkVfFCa5qclWnlGEJT1_OGtF6sFdD1xRgfOrfiU/exec";
@@ -167,13 +170,28 @@
     let isHost = false;
     let pollTimer = null;
     let lastStateStr = ""; 
+    let toastTimeout = null;
+
+    // 自訂非阻塞式提示訊息
+    function showToast(msg) {
+      const toast = document.getElementById("toast-message");
+      toast.textContent = msg;
+      toast.classList.remove("opacity-0");
+      toast.classList.add("opacity-100");
+      
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove("opacity-100");
+        toast.classList.add("opacity-0");
+      }, 2500);
+    }
 
     function joinRoom() {
       const rInput = document.getElementById("room-input").value.trim();
       const pInput = document.getElementById("player-input").value.trim();
       
       if (!rInput || !pInput) {
-        alert("請輸入房間代碼與暱稱！");
+        showToast("請輸入房間代碼與暱稱！");
         return;
       }
 
@@ -197,15 +215,20 @@
       const hostPanel = document.getElementById("host-panel");
       if (isHost) {
         hostPanel.classList.remove("hidden");
-        alert("🔒 房主模式已啟用");
+        showToast("🔒 房主模式已啟用");
       } else {
         hostPanel.classList.add("hidden");
-        alert("🔒 房主模式已關閉");
+        showToast("🔒 房主模式已關閉");
+      }
+      // 強制重新渲染房主控制項
+      if (lastStateStr) {
+        renderUI(JSON.parse(lastStateStr));
       }
       pollData(); 
     }
 
     async function pollData() {
+      if (!currentRoom) return;
       try {
         // 加入 redirect: 'follow' 處理跨域轉址
         const res = await fetch(`${GAS_API_URL}?room=${encodeURIComponent(currentRoom)}`, {
@@ -279,36 +302,38 @@
 
       // 2. 處理 3D 卡片渲染
       cardsArea.innerHTML = "";
-      Object.keys(answers).forEach(name => {
-        const ans = answers[name];
-        const isFlipped = status === "revealed" ? "flipped" : "";
-        
-        const cardHTML = `
-          <div class="flip-card w-40 h-56">
-            <div class="flip-card-inner relative w-full h-full shadow-sm rounded-xl border border-gray-200 ${isFlipped}">
-              
-              <!-- 卡片背面 (未開牌時顯示) -->
-              <div class="flip-card-front bg-gradient-to-br from-gray-50 to-gray-200 rounded-xl flex flex-col items-center justify-center p-4">
-                <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm mb-3 text-gray-400 font-bold text-xl">
-                  ${name.charAt(0).toUpperCase()}
+      if (answers) {
+        Object.keys(answers).forEach(name => {
+          const ans = answers[name];
+          const isFlipped = status === "revealed" ? "flipped" : "";
+          
+          const cardHTML = `
+            <div class="flip-card w-40 h-56 ${isFlipped}">
+              <div class="flip-card-inner relative w-full h-full shadow-sm rounded-xl border border-gray-200">
+                
+                <!-- 卡片背面 (未開牌時顯示) -->
+                <div class="flip-card-front bg-gradient-to-br from-gray-50 to-gray-200 rounded-xl flex flex-col items-center justify-center p-4">
+                  <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm mb-3 text-gray-400 font-bold text-xl">
+                    ${name.charAt(0).toUpperCase()}
+                  </div>
+                  <p class="font-medium text-gray-700 truncate w-full text-center">${name}</p>
+                  <span class="text-[10px] mt-2 bg-green-100 text-green-700 px-2 py-0.5 rounded-full border border-green-200">Ready</span>
                 </div>
-                <p class="font-medium text-gray-700 truncate w-full text-center">${name}</p>
-                <span class="text-[10px] mt-2 bg-green-100 text-green-700 px-2 py-0.5 rounded-full border border-green-200">Ready</span>
-              </div>
-              
-              <!-- 卡片正面 (開牌時顯示答案) -->
-              <div class="flip-card-back bg-white rounded-xl shadow-md border border-gray-300 flex flex-col items-center justify-center p-4">
-                <p class="font-bold text-gray-800 text-2xl text-center break-words w-full">${ans}</p>
-                <div class="absolute bottom-4 left-0 w-full text-center border-t border-gray-100 pt-2">
-                  <p class="text-xs text-gray-400">${name}</p>
+                
+                <!-- 卡片正面 (開牌時顯示答案) -->
+                <div class="flip-card-back bg-white rounded-xl shadow-md border border-gray-300 flex flex-col items-center justify-center p-4">
+                  <p class="font-bold text-gray-800 text-2xl text-center break-words w-full">${ans}</p>
+                  <div class="absolute bottom-4 left-0 w-full text-center border-t border-gray-100 pt-2">
+                    <p class="text-xs text-gray-400">${name}</p>
+                  </div>
                 </div>
-              </div>
 
+              </div>
             </div>
-          </div>
-        `;
-        cardsArea.insertAdjacentHTML('beforeend', cardHTML);
-      });
+          `;
+          cardsArea.insertAdjacentHTML('beforeend', cardHTML);
+        });
+      }
 
       // 3. 處理房主面板顯示邏輯
       if (isHost) {
