@@ -4,12 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>雲端心電感應</title>
-  <!-- 引入 Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 引入字體 -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-  
-  <!-- ==================== CSS 樣式區塊 ==================== -->
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -78,8 +74,6 @@
 </head>
 <body class="min-h-screen flex flex-col items-center py-10 px-4">
 
-  <!-- ==================== HTML 結構區塊 ==================== -->
-  
   <!-- 登入與房間分流區 -->
   <div id="login-section" class="w-full max-w-md bg-white p-8 rounded-xl shadow-sm border border-gray-200 mt-10">
     <h1 class="text-2xl font-semibold mb-2 flex items-center gap-2 text-gray-800">
@@ -164,9 +158,8 @@
   <!-- 隱藏的房主開關 (右下角極淡的小圓點) -->
   <div class="fixed bottom-3 right-3 w-3 h-3 rounded-full bg-gray-300 opacity-20 hover:opacity-100 cursor-pointer transition-opacity" onclick="toggleHost()" title="切換房主模式"></div>
 
-  <!-- ==================== JavaScript 邏輯區塊 ==================== -->
   <script>
-    // 已更新為新的 API 網址，並使用 CORS 修正寫法
+    // 已更新為新的 API 網址
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyAQhuKH4eE4IbwY2Be4fgdHPDFxkVfFCa5qclWnlGEJT1_OGtF6sFdD1xRgfOrfiU/exec";
     
     let currentRoom = "";
